@@ -32,7 +32,7 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 # Gemini API Key
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 
 # Application definition
