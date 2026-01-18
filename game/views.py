@@ -8,6 +8,9 @@ import time
 from google.genai.errors import APIError
 from functools import wraps
 from .utils import is_special_command, handle_special_command, check_game_over, check_game_clear
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Gemini API の設定（モジュールレベルで 1 回だけ）
@@ -26,29 +29,29 @@ def rate_limit(func):
         global last_request_time
         current_time = time.time()
         elapsed = current_time - last_request_time
-        
+
         if elapsed < min_interval:
             wait_time = min_interval - elapsed
             time.sleep(wait_time)
-        
+
         result = func(*args, **kwargs)
         last_request_time = time.time()
         return result
-    
+
     return wrapper
 
 
 def _call_gemini_api_with_retry(prompt, max_retries=3):
     """
     Gemini API を呼び出し（リトライ付き）
-    
+
     Args:
         prompt (str): プロンプト
         max_retries (int): 最大リトライ回数（502, 503 などの一時的なエラー用）
-    
+
     Returns:
         str: API の応答テキスト
-        
+
     Note:
         4XX 系（400-499）及び 500 エラーは即座にエラーメッセージを返します
         それ以外の APIError（502, 503 など）は指数バックオフでリトライします。
@@ -184,6 +187,9 @@ def game_action(request):
         request.session.create()
         session_id = request.session.session_key
     
+    # ここにログを追加します
+    logger.info(f"Received message: {message=}, {session_id=}")
+
     game_session, _ = GameSession.objects.get_or_create(session_id=session_id)
     
     # ユーザーのメッセージを保存
@@ -206,6 +212,9 @@ def game_action(request):
         # AI の応答を生成
         ai_response = generate_game_response(message, game_session)
     
+        # ここにログを追加します
+        logger.info(f"AI response generated: {ai_response[:50]}...")
+
         # AI の応答を保存
         ChatMessage.objects.create(
             session=game_session,

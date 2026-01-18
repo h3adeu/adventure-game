@@ -11,3 +11,9 @@ urlpatterns = [
 # 開発環境での静的ファイル配信
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+
+    # デバッグモード時のみ Debug Toolbar を有効化
+    import debug_toolbar    # noqa: E402
+    urlpatterns = [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns
