@@ -3,31 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>冒険ゲーム</title>
+    <title>Gemini API テスト</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 50px auto;
             padding: 20px;
-            background-color: #f5f5f5;
         }
         .container {
-            background-color: white;
+            background-color: #f5f5f5;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: #333;
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>廃墟研究所からの脱出</h1>
-        <p>Django + LLM で作るテキストアドベンチャー</p>
-        <p>現在の時刻: {{ current_time }}</p>
+        <h1>🤖 Gemini API テスト</h1>
+        <p>メッセージを入力して Gemini と会話してみましょう</p>
+        
+        <form id="testForm">
+            {% csrf_token %}
+            <input type="text" id="message" name="message" placeholder="メッセージを入力..." required>
+            <button type="submit">送信</button>
+        </form>
+        <div id="response"></div>
     </div>
+
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const message = document.getElementById('message').value;
+            const responseDiv = document.getElementById('response');
+            
+            // ローディング表示
+            responseDiv.innerHTML = '<p class="loading">考え中...</p>';
+            
+            try {
+                // FormData: フォームのデータを送信するためのオブジェクト
+                // POST リクエストでデータを送る標準的な方法
+                const formData = new FormData();
+                formData.append('message', message);  // メッセージを追加
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');  // セキュリティトークン
+                
+                const response = await fetch('/test-gemini/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseDiv.innerHTML = `
+                        <p><strong>あなた:</strong> ${data.user_message}</p>
+                        <p><strong>Gemini:</strong> ${data.ai_response}</p>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `<p style="color: red;">エラー: ${data.error}</p>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<p style="color: red;">エラー: ${error.message}</p>`;
+            }
+        });
+    </script>
 </body>
 </html>

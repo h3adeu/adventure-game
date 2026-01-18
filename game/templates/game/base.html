@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Text Adventure{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN（開発時のみ、本番環境では別の方法を推奨） -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- htmx CDN -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+    <!-- ヘッダー -->
+    <header class="bg-gray-800 shadow-lg">
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-400">
+                <a href="{% url 'game:home' %}">AI Adventure</a>
+            </h1>
+            <div class="space-x-4">
+                <a href="{% url 'game:home' %}" class="hover:text-blue-300">New Game</a>
+                <a href="{% url 'admin:index' %}" class="hover:text-blue-300">Admin</a>
+            </div>
+        </nav>
+    </header>
+    
+    <!-- メインコンテンツ -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        {% block content %}
+        <!-- 各ページの内容がここに入る -->
+        {% endblock %}
+    </main>
+    
+    <!-- フッター -->
+    <footer class="bg-gray-800 py-4 text-center text-gray-400 text-sm">
+        <p>&copy; 2025 AI Text Adventure | Powered by Django & Gemini API</p>
+    </footer>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

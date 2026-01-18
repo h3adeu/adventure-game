@@ -1,0 +1,167 @@
+{% extends "game/base.html" %}
+
+{% block title %}ゲーム画面{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-gray-800 rounded-lg shadow-2xl overflow-hidden">
+        <!-- ゲームヘッダー -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-4">
+            <h2 class="text-2xl font-bold">廃墟の研究所からの脱出</h2>
+        </div>
+        
+        <!-- チャット履歴表示エリア（htmx で更新） -->
+        <div class="relative bg-gray-900">
+            <div id="chat-container" class="p-6 space-y-4 h-96 overflow-y-auto">
+                {% include "partials/chat_messages.html" %}
+            </div>
+            
+            <!-- ローディングスピナー（API 呼び出し中に表示） -->
+            <div id="loading-spinner" class="hidden absolute inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-10">
+                <div class="flex flex-col items-center">
+                    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+                    <p class="mt-4 text-gray-300 text-lg">AI が考えています...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- メッセージ入力フォーム -->
+        <div class="p-4 bg-gray-800 border-t border-gray-700">
+            <form 
+                hx-post="{% url 'game:game_action' %}"
+                hx-target="#chat-container"
+                hx-swap="innerHTML"
+                class="flex gap-2">
+                {% csrf_token %}
+                <input 
+                    type="text" 
+                    name="message" 
+                    placeholder="メッセージを入力..." 
+                    class="flex-grow px-4 py-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required>
+                <button 
+                    type="submit"
+                    class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold transition">
+                    送信
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // スクロール関数を定義
+    function scrollToBottom() {
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) {
+            // スムーズにスクロール
+            chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }
+    
+    // ページ読み込み時にもマークダウンを変換
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageContents = document.querySelectorAll('.message-content');
+        messageContents.forEach(function(element) {
+            // **text** を <strong>text</strong> に変換
+            element.innerHTML = element.innerHTML.replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-yellow-300">$1</strong>');
+        });
+        
+        // 初期表示時もスクロール
+        setTimeout(scrollToBottom, 100);
+    });
+    
+    // htmx イベントリスナーでスピナーを制御
+    document.body.addEventListener('htmx:beforeRequest', function(event) {
+        // リクエスト送信前にスピナーを表示
+        const spinner = document.getElementById('loading-spinner');
+        if (spinner) {
+            spinner.classList.remove('hidden');
+        }
+        
+        // フォームの送信ボタンを無効化
+        const form = event.target.closest('form');
+        if (form) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            const input = form.querySelector('input[name="message"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            if (input) {
+                input.disabled = true;
+            }
+        }
+    });
+    
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        // スワップ完了後にスピナーを非表示
+        const spinner = document.getElementById('loading-spinner');
+        if (spinner) {
+            spinner.classList.add('hidden');
+        }
+        
+        // フォームの送信ボタンを有効化
+        const form = document.querySelector('form[hx-post]');
+        if (form) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            const input = form.querySelector('input[name="message"]');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            if (input) {
+                input.disabled = false;
+                input.value = ''; // 入力欄をクリア
+                input.focus(); // 入力欄にフォーカス
+            }
+        }
+        
+        // マークダウンの**text**を<strong>タグに変換
+        const messageContents = document.querySelectorAll('.message-content');
+        messageContents.forEach(function(element) {
+            // **text** を <strong>text</strong> に変換
+            element.innerHTML = element.innerHTML.replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-yellow-300">$1</strong>');
+        });
+        
+        // チャットコンテナを下にスクロール（レンダリング完了を待つ）
+        requestAnimationFrame(function() {
+            setTimeout(scrollToBottom, 100);
+        });
+    });
+    
+    // htmx:afterSettle イベント（DOM 更新とレンダリング完了後）でもスクロール
+    document.body.addEventListener('htmx:afterSettle', function(event) {
+        // レンダリング完了後にスクロール
+        requestAnimationFrame(function() {
+            setTimeout(scrollToBottom, 100);
+        });
+    });
+    
+    // エラー発生時にもスピナーを非表示にしてフォームを再有効化
+    document.body.addEventListener('htmx:responseError', function(event) {
+        const spinner = document.getElementById('loading-spinner');
+        if (spinner) {
+            spinner.classList.add('hidden');
+        }
+        
+        const form = document.querySelector('form[hx-post]');
+        if (form) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            const input = form.querySelector('input[name="message"]');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            if (input) {
+                input.disabled = false;
+            }
+        }
+    });
+</script>
+{% endblock %}
