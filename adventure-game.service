@@ -1,0 +1,21 @@
+[Unit]
+Description=Adventure Game Gunicorn Daemon
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/adventure-game
+Environment="PATH=/home/ubuntu/adventure-game/.venv/bin"
+EnvironmentFile=/home/ubuntu/adventure-game/.env
+ExecStart=/home/ubuntu/adventure-game/.venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/home/ubuntu/adventure-game/adventure_game.sock \
+    server.wsgi:application
+
+# ソケットファイルのパーミッション設定を追加
+RuntimeDirectory=adventure-game
+RuntimeDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target

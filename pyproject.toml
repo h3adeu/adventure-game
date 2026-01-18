@@ -8,5 +8,6 @@ dependencies = [
     "django==5.2",
     "django-debug-toolbar>=6.1.0",
     "google-genai>=1.59.0",
+    "gunicorn>=23.0.0",
     "python-dotenv>=1.2.1",
 ]
