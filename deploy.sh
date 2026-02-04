@@ -11,6 +11,7 @@ fi
 SSH_KEY="$HOME/.ssh/adventure-game-key.pem"
 REMOTE_USER="ubuntu"
 REMOTE_DIR="/home/ubuntu/adventure-game"
+SSH_PORT=54321
 
 # SSH鍵の存在確認
 if [ ! -f "$SSH_KEY" ]; then
@@ -32,7 +33,7 @@ if ! rsync -avz \
   --exclude 'db.sqlite3' \
   --exclude 'staticfiles/' \
   --exclude '*.log' \
-  -e "ssh -i $SSH_KEY" \
+  -e "ssh -i $SSH_KEY -p $SSH_PORT" \
   ./ $REMOTE_USER@$PUBLIC_IP:$REMOTE_DIR/; then
     echo "エラー: ファイル転送に失敗しました"
     exit 1
@@ -43,7 +44,7 @@ echo "[√] プロジェクトファイルの転送完了"
 if [ -f ".env.prod" ]; then
     echo "[2/7] .env.prod をコピー中..."
     if ! rsync -avz \
-      -e "ssh -i $SSH_KEY" \
+      -e "ssh -i $SSH_KEY -p $SSH_PORT" \
       .env.prod $REMOTE_USER@$PUBLIC_IP:$REMOTE_DIR/; then
         echo "エラー: .env.prod の転送に失敗しました"
         exit 1
@@ -56,7 +57,7 @@ fi
 # 3. pyproject.toml と uv.lock をコピー
 echo "[3/7] 依存関係ファイルをコピー中..."
 if ! rsync -avz \
-  -e "ssh -i $SSH_KEY" \
+  -e "ssh -i $SSH_KEY -p $SSH_PORT" \
   pyproject.toml uv.lock \
   $REMOTE_USER@$PUBLIC_IP:$REMOTE_DIR/; then
     echo "エラー: 依存関係ファイルの転送に失敗しました"
@@ -68,13 +69,13 @@ echo "[√] 依存関係ファイルの転送完了"
 if [ -f "adventure-game.service" ]; then
     echo "[4/7] Systemdサービスファイルをコピー中..."
     if ! rsync -avz \
-      -e "ssh -i $SSH_KEY" \
+      -e "ssh -i $SSH_KEY -p $SSH_PORT" \
       adventure-game.service \
       $REMOTE_USER@$PUBLIC_IP:/tmp/adventure-game.service; then
         echo "エラー: Systemdサービスファイルの転送に失敗しました"
         exit 1
     fi
-    ssh -i $SSH_KEY $REMOTE_USER@$PUBLIC_IP \
+    ssh -i $SSH_KEY -p $SSH_PORT $REMOTE_USER@$PUBLIC_IP \
       "sudo mv /tmp/adventure-game.service /etc/systemd/system/adventure-game.service" || true
     echo "[√] Systemdサービスファイルの転送完了"
 else
@@ -85,13 +86,13 @@ fi
 if [ -f "adventure-game.nginx" ]; then
     echo "[5/7] Nginx設定ファイルをコピー中..."
     if ! rsync -avz \
-      -e "ssh -i $SSH_KEY" \
+      -e "ssh -i $SSH_KEY -p $SSH_PORT" \
       adventure-game.nginx \
       $REMOTE_USER@$PUBLIC_IP:/tmp/adventure-game.nginx; then
         echo "エラー: Nginx設定ファイルの転送に失敗しました"
         exit 1
     fi
-    ssh -i $SSH_KEY $REMOTE_USER@$PUBLIC_IP \
+    ssh -i $SSH_KEY -p $SSH_PORT $REMOTE_USER@$PUBLIC_IP \
       "sudo mv /tmp/adventure-game.nginx /etc/nginx/sites-available/adventure-game" || true
     echo "[√] Nginx設定ファイルの転送完了"
 else
@@ -100,7 +101,7 @@ fi
 
 # 6. サーバー側でデプロイスクリプトを実行
 echo "[6/7] サーバー側でデプロイを実行中..."
-ssh -i $SSH_KEY $REMOTE_USER@$PUBLIC_IP << 'REMOTE_SCRIPT'
+ssh -i $SSH_KEY -p $SSH_PORT $REMOTE_USER@$PUBLIC_IP << 'REMOTE_SCRIPT'
 set -e
 cd /home/ubuntu/adventure-game
 
@@ -139,7 +140,7 @@ REMOTE_SCRIPT
 
 # 7. SystemdサービスとNginxの設定
 echo "[7/7] サービスを再起動中..."
-ssh -i $SSH_KEY $REMOTE_USER@$PUBLIC_IP << 'REMOTE_SCRIPT'
+ssh -i $SSH_KEY -p $SSH_PORT $REMOTE_USER@$PUBLIC_IP << 'REMOTE_SCRIPT'
 set -e
 
 # ubuntu ユーザーを www-data グループに追加（既に追加されている場合はスキップ）

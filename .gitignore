@@ -23,6 +23,9 @@ staticfiles/
 .env.local
 .env.prod
 
+# AWS / デプロイ用（機密情報を含む可能性）
+.aws-ec2-info
+
 # IDE
 .vscode/
 .idea/
