@@ -1,0 +1,8 @@
+[DEFAULT]
+bantime  = 3600    # 1時間ブロック
+findtime = 600     # 10分以内に
+maxretry = 5       # 5回失敗でブロック
+
+[sshd]
+enabled = true
+port = 5432        # SSHポートを変更した場合

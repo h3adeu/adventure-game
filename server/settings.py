@@ -176,3 +176,25 @@ LOGGING = {
         },
     },
 }
+
+# HTTPS 設定（本番環境のみ）
+if not DEBUG:
+    # すべての HTTP リクエストを HTTPS にリダイレクト
+    SECURE_SSL_REDIRECT = True
+
+    # セッションクッキーを HTTPS のみに制限
+    SESSION_COOKIE_SECURE = True
+
+    # CSRF クッキーを HTTPS のみに制限
+    CSRF_COOKIE_SECURE = True
+
+    # HSTS の有効化（ブラウザに常に HTTPS を強制）
+    SECURE_HSTS_SECONDS = 31536000  # 1 年
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # X-Content-Type-Options ヘッダー
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+    # X-Frame-Options ヘッダー
+    X_FRAME_OPTIONS = 'SAMEORIGIN'
