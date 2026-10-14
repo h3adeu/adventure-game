@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.conf import settings
 from .models import GameSession, ChatMessage
@@ -124,39 +125,49 @@ def generate_game_response(user_action, session, max_retries=3):
     return _call_gemini_api_with_retry(prompt, max_retries)
 
 
-def home(request):
-    """ゲームのホーム画面"""
-    # セッション ID を取得または作成
+def _get_current_game_session(request):
+    """Cookie のセッションに対応する GameSession を返す（なければ None。ここでは作らない）"""
     session_id = request.session.session_key
     if not session_id:
+        return None
+    return GameSession.objects.filter(session_id=session_id).first()
+
+
+def home(request):
+    """ゲームのホーム画面"""
+    # ボットのように GET するだけのアクセスで、セッションの作成や Gemini API の
+    # 呼び出しが起きないよう、ここでは既存のゲームを表示するだけにする。
+    # 新しいゲームは「ゲームを始める」ボタン（start_game への POST）で始める
+    game_session = _get_current_game_session(request)
+    messages = game_session.messages.all() if game_session else []
+
+    return render(request, 'game/game.html', {
+        'session': game_session,
+        'messages': messages
+    })
+
+
+@require_POST
+def start_game(request):
+    """「ゲームを始める」ボタンから呼ばれ、開始メッセージを生成する（htmx 用）"""
+    # セッションを取得または作成（POST には CSRF トークンが必要なので、ボットは通らない）
+    if not request.session.session_key:
         request.session.create()
-        session_id = request.session.session_key
-    
-    # ゲームセッションを取得または作成
-    game_session, created = GameSession.objects.get_or_create(
-        session_id=session_id
+    game_session, _ = GameSession.objects.get_or_create(
+        session_id=request.session.session_key
     )
-    
-    # 会話履歴を取得
-    messages = game_session.messages.all()
-    
-    # 初回アクセスの場合、開始メッセージを生成
-    if created or not messages.exists():
+
+    # まだ開始メッセージがない場合だけ生成する（ボタンの二度押しで API を重ねて呼ばない）
+    if not game_session.messages.exists():
         ai_response = generate_game_response("", game_session)
-        
-        # 開始メッセージを保存
         ChatMessage.objects.create(
             session=game_session,
             role='assistant',
             content=ai_response
         )
-        
-        # 再度取得
-        messages = game_session.messages.all()
-    
-    return render(request, 'game/game.html', {
-        'session': game_session,
-        'messages': messages
+
+    return render(request, 'partials/chat_messages.html', {
+        'messages': game_session.messages.all()
     })
 
 

@@ -13,7 +13,25 @@
         <!-- チャット履歴表示エリア（htmx で更新） -->
         <div class="relative bg-gray-900">
             <div id="chat-container" class="p-6 space-y-4 h-96 overflow-y-auto">
+                {% if messages %}
                 {% include "partials/chat_messages.html" %}
+                {% else %}
+                <!-- まだゲームを始めていない場合: ボタンを押したときに開始メッセージを生成する -->
+                <div class="h-full flex flex-col items-center justify-center gap-4 text-center">
+                    <p class="text-gray-300">薄暗い研究所で目を覚ましたところから、物語が始まります。</p>
+                    <form
+                        hx-post="{% url 'game:start_game' %}"
+                        hx-target="#chat-container"
+                        hx-swap="innerHTML">
+                        {% csrf_token %}
+                        <button
+                            type="submit"
+                            class="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded font-semibold transition">
+                            ゲームを始める
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
             </div>
             
             <!-- ローディングスピナー（API 呼び出し中に表示） -->
